@@ -25,10 +25,6 @@ async def connect():
     print("Running script")
 
     client = TelegramClient("anon", API_ID, API_HASH)
-
-    
-
-  
     
     if not await client.start(): #and await client.is_user_authorized():
 
@@ -64,16 +60,50 @@ async def connect():
     return client
 
 
+async def get_groups(tgClient):
+
+
+    groups = []
+    async for dialog in tgClient.iter_dialogs():
+
+        if dialog.is_group:
+            groups.append({"name": dialog.name, "id": dialog.id})
+        else: continue
+
+    
+    count = 1
+    for group in groups:
+
+        print("Enter "+str(count)+" to scrap group "+group["name"])
+        count = count + 1
+
+    option = input("Enter your option: ")
+   
+    try:
+
+        option = int(option)
+        print("Options", option)
+        group = groups[option - 1]
+        print("Selected group is",group["name"])
+        return group["id"]
+    
+    except Exception as err:
+        print(err)
+        print("Invalid options, program exit")
+        return
+
+
 async def add(tgClient,users, mychannel):
 
     await tgClient.start()
     channel_entity = await tgClient.get_entity(mychannel)
     usernames = []
     count = 0
+    # change username to id and add user by id
     for user in users:
         
-        username = user["username"]
-        usernames.append(username)
+        id = user["id"]
+        usernames.append(id)
         count = count + 1
         if count % 4 == 0:
             sl = usernames[count-4:count]
@@ -104,9 +134,10 @@ async def getChannelMembers(tgClient, channel):
         time.sleep(int(SLEEP_TIME))
          
     for user in users:
-        member = {"username": user.username, "firstname":user.first_name, "lastname": user.last_name}
-        if user.phone:
-            member.phone = user.phone
+        if user.bot:
+            continue
+        member = {"id": user.id,"username": user.username, "firstname":user.first_name, "lastname": user.last_name}
+        
         result.append(member)
     print("Total number scrapped:",len(result))
     writeToFile(result)
@@ -128,6 +159,8 @@ def writeToFile(lists, filename="users.json"):
     print("Content after:", len(content))
     with open(filename, "w") as f:
         json.dump(content, f)
+
+
 def getOffset():
     l = 0
     try:
@@ -139,6 +172,7 @@ def getOffset():
         
         l = 0
     return l
+
 async def isMember(tgClient,channel, username):
     limit = 100
     offset = 0
@@ -155,6 +189,8 @@ async def isMember(tgClient,channel, username):
 async def main():
     client = await connect()
 
+    
+
     while True:
         print("ENter 1 to scrapp members from groups")
         print("Enter 2 to add scrapped member to your group")
@@ -162,10 +198,11 @@ async def main():
         action = input("Enter 1 or 2: ")
 
         if action == "1":
-            CHAT_LINK = input("Enter group link or y to use group in env file: ")
-            group=""
-            group = CHAT_LINK if CHAT_LINK != "y" else os.getenv("GROUP")
-            print("group is ",group)
+
+            CHAT_LINK = await get_groups(client)
+            
+            group = CHAT_LINK #if CHAT_LINK != "y" else os.getenv("GROUP")
+            #print("group is ",group)
             await getChannelMembers(client,group)
             print("Done adding members")
 
@@ -179,6 +216,8 @@ async def main():
         else:
             print("Good bye")
             break
+            
+    
 
 if __name__ == "__main__":
 	asyncio.run(main())
