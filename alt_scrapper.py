@@ -100,19 +100,24 @@ async def add(tgClient,users, mychannel):
     channel_entity = await tgClient.get_entity(mychannel)
     usernames = []
     count = 0
-    # change username to id and add user by id
+    
+
+
     for user in users:
-        
         id = user["id"]
         usernames.append(id)
-        count = count + 1
-        if count % 4 == 0:
-            sl = usernames[count-4:count]
-            try:
-                await tgClient(InviteToChannelRequest(channel_entity, sl))
-                print("sleeping now after adding")
-                time.sleep(15)
-            except Exception as err:
+    count  = 0
+    l = len(users)
+    print("Adding commence")
+    while True:
+        if count >= l:
+            break
+        sl = usernames[count:count+10]
+        count+=10
+        try:
+            await tgClient(InviteToChannelRequest(channel_entity, sl))
+            time.sleep(60)
+        except Exception as err:
                 print(err)
            
 async def get_member_using_search(client, channel):
@@ -155,45 +160,6 @@ async def get_member_using_search(client, channel):
     writeToFile(result)
         
 
-async def getChannelMembers(tgClient, channel):
-    users = []
-    result = []
-    entity = await tgClient.get_entity(channel)
-    offset = getOffset()
-    limit = 0
-
-    users = await tgClient.get_participants(entity, aggressive=True)
-
-    print("Total number",len(users))
-
-    for user in users:
-        if user.bot:
-            continue
-        member = {"id": user.id,"username": user.username, "firstname":user.first_name, "lastname": user.last_name}
-        
-        result.append(member)
-    print("Total number scrapped:",len(result))
-    writeToFile(result)
-    """
-    while True:
-
-        members = await tgClient.get_participants(entity, aggressive=True)
-        
-        #tgClient(GetParticipantsRequest(channel=entity,filter=ChannelParticipantsSearch(''), offset=offset, limit=limit, hash=0))
-        
-        print("Total numbers",len(members))
-        counts = members.count
-        if not members.users:
-            break
-        users.extend(members.users)
-        offset = len(users)
-        limit = limit + counts
-
-        print("sleeping for few seconds")
-        time.sleep(int(SLEEP_TIME))
-         
-    
-    """
    
 
 def writeToFile(lists, filename="users.json"):
